@@ -1,0 +1,13 @@
+../Core/Src/max31865.c:74:6:max31865_init	40	static
+../Core/Src/max31865.c:119:10:max31865_readADC	24	static
+../Core/Src/max31865.c:147:7:max31865_readRTD_ohm	24	static
+../Core/Src/max31865.c:152:7:max31865_readCelsius	32	static
+../Core/Src/max31865.c:160:7:max31865_readKelvin	16	static
+../Core/Src/max31865.c:165:6:max31865_setHighFaultThreshold	24	static
+../Core/Src/max31865.c:178:6:max31865_setLowFaultThreshold	24	static
+../Core/Src/max31865.c:190:8:max31865_checkThresholdFault	24	static
+../Core/Src/max31865.c:202:9:max31865_readFault	24	static
+../Core/Src/max31865.c:209:6:max31865_clearFault	24	static
+../Core/Src/max31865.c:216:13:_write_n_reg	32	static
+../Core/Src/max31865.c:236:13:_read_n_reg	40	static
+../Core/Src/max31865.c:255:6:_handle_threshold_fault	16	static

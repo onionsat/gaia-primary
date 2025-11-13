@@ -1,0 +1,2 @@
+../Core/Src/max31865_utilities.c:15:6:MAX31865chipselect1	16	static
+../Core/Src/max31865_utilities.c:32:6:MAX31865chipselect2	16	static

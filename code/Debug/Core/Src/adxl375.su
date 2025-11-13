@@ -1,0 +1,8 @@
+../Core/Src/adxl375.c:22:16:adxl375_Read	32	static
+../Core/Src/adxl375.c:56:16:adxl375_Write	32	static
+../Core/Src/adxl375.c:87:6:adxl375_Delay	16	static
+../Core/Src/adxl375.c:101:16:ADXL375writeReg	32	static
+../Core/Src/adxl375.c:132:16:ADXL375_SetMeasureBit	24	static
+../Core/Src/adxl375.c:150:16:ADXL375_SetDatarate	32	static
+../Core/Src/adxl375.c:173:16:ADXL375_setFIFOmode	32	static
+../Core/Src/adxl375.c:196:16:ADXL375_init	16	static
