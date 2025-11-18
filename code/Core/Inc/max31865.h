@@ -27,6 +27,7 @@ typedef struct
 	uint8_t(*SpiWrite)(uint8_t, uint8_t, uint8_t*); // SPI write
 	uint8_t(*SpiRead)(uint8_t, uint8_t, uint8_t*); // SPI read
 	uint8_t(*DRDY)(void); // gets the state of DRDY
+	void(*errorCallback)(void); // errorcallback, user implemented
 
 	// sensor's parameters
 	uint16_t inputCapacitor; // input capacitor's value in nF

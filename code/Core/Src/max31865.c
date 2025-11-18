@@ -207,10 +207,13 @@ uint8_t MAX31865_1shot(MAX31865* sensorInstance)
 			return 2; // error switching bias on
 		}
 
-		// wait to ensure a precise conversion after bias power up
-		uint32_t tau_10.5 = (uint32_t)(ceil((sensorInstance->inputCaoacitor * sensorInstance->rRef * 10.5) / 1000000)); // 10.5 tau in ms with ceil()
+		/*
+		 * Wait to ensure a precise conversion after bias power up
+		 * Calculated for 100nF input capacitor + 1k reference resistor, tau * 10.5 = 1.05ms, delay = 1ms + tau * 10.5 = 2.05ms, rounded up to 3ms
+		 */
+		sensorInstance->delay(3);
 
-		sensorInstance->delay(tau_10.5 + 1);
+		sensorInstance->bias = 1;
 	}
 
 	// reading the current status of the register
@@ -250,10 +253,10 @@ uint8_t MAX31865_1shot(MAX31865* sensorInstance)
 
 
 /**
-  * @brief Read the data regsiters
+  * @brief Read the data registers, if
   * @param A pointer to an instance of MAX31865
   * @param A pointer to a variable where the data read should be stored(raw ADC)
-  * @retval 1 -> success, 0 -> failure
+  * @retval 1 -> success, 0 -> failure, 2 -> error bit
   */
 uint8_t MAX31865readData(MAX31865* sensorInstance, uint16_t* data)
 {
@@ -264,7 +267,25 @@ uint8_t MAX31865readData(MAX31865* sensorInstance, uint16_t* data)
 		return 0;
 	}
 
+	// checking error bit
+	if(readBuffer[1] & 0x01)
+	{
+		// if error bit set, calling error callback
+		sensorInstance->errorCallback();
+
+		return 2;
+	}
+
 	*data = ((uint16_t)readBuffer[0] | (uint16_t)readBuffer[1]) >> 1;
 
 	return 1;
 }
+
+
+/**
+  * @brief Read the data registers, if
+  * @param A pointer to an instance of MAX31865
+  * @param A pointer to a variable where the data read should be stored(raw ADC)
+  * @retval 1 -> success, 0 -> failure, 2 -> error bit
+  */
+uint8_t MAX31865()
