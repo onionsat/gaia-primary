@@ -67,6 +67,9 @@ uint8_t MAX31865switchBias(MAX31865* sensorInstance, uint8_t state)
 		return 0;
 	}
 
+	// if setting bias to the desired value was successful setting it in the sensor instance
+	sensorInstance->bias = state;
+
 	return 1;
 }
 
@@ -102,6 +105,9 @@ uint8_t MAX31865setConverionMode(MAX31865* sensorInstance, uint8_t mode)
 	{
 		return 0;
 	}
+
+	// if setting conversion mdoe to the desired value was successful setting it in the sensor instance
+	sensorInstance->conversionMode = mode;
 
 	return 1;
 }
@@ -139,6 +145,9 @@ uint8_t MAX31865setOperationMode(MAX31865* sensorInstance, uint8_t operationmode
 		return 0;
 	}
 
+	// if setting the operation mode to the desired value was successful setting it in the sensor instance
+	sensorInstance->operationMode = operationmode;
+
 	return 1;
 }
 
@@ -174,6 +183,88 @@ uint8_t MAX31865setNotchfrequency(MAX31865* sensorInstance, uint8_t value)
 	{
 		return 0;
 	}
+
+	// if setting bias to the desired value was successful setting it in the sensor instance
+	sensorInsatnce->notchFrequency = value;
+
+	return 1;
+}
+
+
+/**
+  * @brief Does a one shot conversion
+  * @param A pointer to an instance of MAX31865
+  * @retval 1 -> success, 0 -> failure, 2 -> unable to switch bias on
+  */
+uint8_t MAX31865_1shot(MAX31865* sensorInstance)
+{
+	// if the bias isn't on, switching it on
+	if(sensorInstance->bias == 0)
+	{
+		// trying to switch bias on
+		if(MAX31865switchBias(sensorInstance, 1) != 1)
+		{
+			return 2; // error switching bias on
+		}
+
+		// wait to ensure a precise conversion after bias power up
+		uint32_t tau_10.5 = (uint32_t)(ceil((sensorInstance->inputCaoacitor * sensorInstance->rRef * 10.5) / 1000000)); // 10.5 tau in ms with ceil()
+
+		sensorInstance->delay(tau_10.5 + 1);
+	}
+
+	// reading the current status of the register
+	sensorInstance->cs(0);
+	uint8_t retVal = sensorInstance->SpiRead(configuration, 1, &currentConfiguratonRegister);
+	sensorInstance->cs(1);
+
+	if(retVal != 1)
+	{
+		return 0;
+	}
+
+	uint8_t configurationRegisterDesired = configurationRegister | (1 << 5);
+
+	// writing the desired status to the register
+	sensorInstance->cs(0);
+	retVal = sensorInstance->SpiWrite((uint8_t)configuration | 0x80, 1, &configurationRegisterDesired);
+	sensorInstance->cs(1);
+
+	if(retVal != 1)
+	{
+		return 0;
+	}
+
+	// waiting for the conversion to be ready
+	if(sensorInstance->notchFrequency == 1) // 50Hz
+	{
+		sensorInstance->delay(63);
+	}
+	else
+	{
+		sensorInstance->delay(52);
+	}
+
+	return 1;
+}
+
+
+/**
+  * @brief Read the data regsiters
+  * @param A pointer to an instance of MAX31865
+  * @param A pointer to a variable where the data read should be stored(raw ADC)
+  * @retval 1 -> success, 0 -> failure
+  */
+uint8_t MAX31865readData(MAX31865* sensorInstance, uint16_t* data)
+{
+	uint8_t readBuffer[2];
+
+	if(sensorInstance->SpiRead(rtdMSBs, 2, readBuffer) != 1)
+	{
+		return 0;
+	}
+
+	*data = ((uint16_t)readBuffer[0] | (uint16_t)readBuffer[1]) >> 1;
 
 	return 1;
 }
