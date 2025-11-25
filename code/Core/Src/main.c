@@ -18,12 +18,11 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "max31865.h"
-
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdio.h>
+#include "max31865.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -67,6 +66,140 @@ static void MX_SPI1_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+// start of user implemented MAX31865 functions
+
+void MAX31865delay(uint32_t us)
+{
+
+}
+
+void MAX31865setCS_1(uint8_t state)
+{
+	if(state == 1)
+	{
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_SET);
+	}
+	else
+	{
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_3, GPIO_PIN_RESET);
+	}
+}
+
+void MAX31865setCS_2(uint8_t state)
+{
+	if(state == 1)
+	{
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);
+	}
+	else
+	{
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET);
+	}
+}
+
+uint8_t MAX31865drdy_1()
+{
+	if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1))
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+uint8_t MAX31865drdy_2()
+{
+	if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_2))
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+uint8_t MAX31865spiWrite(uint8_t reg, uint8_t numberOfBytes, uint8_t* dataBuffer)
+{
+	// sending address byte
+	if(HAL_SPI_Transmit(&hspi1, &reg, 1, 100) != HAL_OK)
+	{
+		return 0; // if error return 0
+	}
+
+	uint8_t reciveBuffer[numberOfBytes];
+
+	// sending actual data
+	if(HAL_SPI_TransmitReceive(&hspi1, dataBuffer, reciveBuffer, numberOfBytes, 100) != HAL_OK)
+	{
+		return 0;
+	}
+
+	return 1;
+}
+
+uint8_t MAX31865spiRead(uint8_t reg, uint8_t numberOfBytes, uint8_t* dataBuffer)
+{
+	// creating an array with dummy bytes
+	uint8_t dummys[numberOfBytes];
+
+	for(int i = 0; i < numberOfBytes; i++)
+	{
+		dummys[i] = 0xFF;
+	}
+
+	// sending address byte
+	if(HAL_SPI_Transmit(&hspi1, &reg, 1, 100) != HAL_OK)
+	{
+		return 0; // if error return 0
+	}
+
+	// receiving actual data
+	if(HAL_SPI_TransmitReceive(&hspi1, dummys, dataBuffer, numberOfBytes, 100) != HAL_OK)
+	{
+		return 0;
+	}
+
+	return 1;
+}
+
+void MAX31865errorcallback(uint8_t faultstatus)
+{
+	if((faultstatus & rtdHighThresholdError) > 0)
+	{
+		// High temperature error
+	}
+
+	if((faultstatus & rtdLowThresholdError) > 0)
+	{
+		// Low temperature error
+	}
+
+	if((faultstatus & refin1Error) > 0)
+	{
+		// if refin- is bigger than 0.85 * Vbias
+	}
+
+	if((faultstatus & refin2Error) > 0)
+	{
+		// if refin- is smaller than 0.85 * Vbias with force- open
+	}
+
+	if((faultstatus & rtdinError) > 0)
+	{
+		// if rtdin- is smaller than 0.85 * Vbias with force- open
+	}
+
+	if((faultstatus & overOrUnderVoltageError) > 0)
+	{
+		// Overvoltage or undervoltage error
+	}
+}
+
+// end of MAX31865 user implemented functions
+
 /* USER CODE END 0 */
 
 /**
@@ -104,7 +237,33 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
+  char UARTbuffer[100];
 
+  MAX31865 max31865_sensor1;
+  uint8_t max31865_sensor1_initRetVal = MAX31865init(&max31865_sensor1, &MAX31865delay, &MAX31865setCS_1, &MAX31865spiWrite, &MAX31865spiRead, &MAX31865drdy_1, &MAX31865errorcallback, 4000, 1000, 0, 0xFFFF, 0x0000, 1, 1);
+  uint16_t max31865_sensor1_databuffer;
+
+  // printing init result on UART
+	int snprintfWritten = snprintf(UARTbuffer, 100, "Init result: %u", max31865_sensor1_initRetVal);
+	HAL_UART_Transmit(&huart1, (uint8_t*)UARTbuffer, snprintfWritten, 100);
+
+  // trying reading and printing configuration register after init
+	uint8_t configurationRegisterAfterInit;
+
+	max31865_sensor1.cs(0);
+	uint8_t confRegAfterInitRetVal = max31865_sensor1.SpiRead(configuration, 1, &configurationRegisterAfterInit);
+	max31865_sensor1.cs(1);
+
+	if(confRegAfterInitRetVal != 1)
+	{
+		int snprintfWritten = snprintf(UARTbuffer, 100, "Error reading configuration register after init\n");
+		HAL_UART_Transmit(&huart1, (uint8_t*)UARTbuffer, snprintfWritten, 100);
+	}
+	else
+	{
+		int snprintfWritten = snprintf(UARTbuffer, 100, "Configuration register after inti: %u", configurationRegisterAfterInit);
+		HAL_UART_Transmit(&huart1, (uint8_t*)UARTbuffer, snprintfWritten, 100);
+	}
 
   /* USER CODE END 2 */
 
@@ -112,7 +271,21 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  if(0 == 0)
+	  {
+		  if(MAX31865readData(&max31865_sensor1, &max31865_sensor1_databuffer) != 1)
+		  {
+			  int snprinftWritten = snprintf(UARTbuffer, 100, "Error reading temperature data from MAX31865 sensor1\n");
+		  	  HAL_UART_Transmit(&huart1, (uint8_t*)UARTbuffer, snprinftWritten, 100);
+		  }
+		  else
+		  {
+			  int snprinftWritten = snprintf(UARTbuffer, 100, "Data read from MAX31865 sensor 1: %u\n", max31865_sensor1_databuffer);
+			  HAL_UART_Transmit(&huart1, (uint8_t*)UARTbuffer, snprinftWritten, 100);
+		  }
+	  }
 
+	  HAL_Delay(1000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -247,10 +420,10 @@ static void MX_SPI1_Init(void)
   hspi1.Init.Mode = SPI_MODE_MASTER;
   hspi1.Init.Direction = SPI_DIRECTION_2LINES;
   hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
-  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_HIGH;
+  hspi1.Init.CLKPhase = SPI_PHASE_2EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_4;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
