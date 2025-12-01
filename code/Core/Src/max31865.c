@@ -406,7 +406,7 @@ uint8_t MAX31865readData(MAX31865* sensorInstance, uint16_t* data)
   */
 uint8_t MAX31865automaticFaultdetection(MAX31865* sensorInstance)
 {
-	// reading the intial state of the configuration register
+	// reading the initial state of the configuration register
 	uint8_t configurationRegisterInitial;
 
 	if(sensorInstance->SpiRead(configuration, 1, &configurationRegisterInitial) != 1)
@@ -451,14 +451,6 @@ uint8_t MAX31865automaticFaultdetection(MAX31865* sensorInstance)
 
 
 /**
-  * @brief Runs an automatic fault detection, at the beginning of the function it saves the current state of the configuration register and after the cycle completes it writes it back
-  * @param A pointer to an instance of MAX31865
-  * @retval 1 -> success, 0 -> couldn't read the initial state of the configuration register, 2 -> couldn't start the automatic fault detection, 3 -> couldn't write back initial configuration register state
-  */
-
-
-
-/**
   * @brief Initialzies an instance of MAX31865
   * @param A pointer to an instance of MAX31865
   * @param Function pointer to user provided delay function
@@ -476,7 +468,7 @@ uint8_t MAX31865automaticFaultdetection(MAX31865* sensorInstance)
   * @param Conversion mode, 1 -> automatic, 0 -> normally off
   * @retval 1 -> success, 0 -> failure
   */
-uint8_t MAX31865init(MAX31865* sensorInstance, void(*userDelay)(uint32_t), void(*userCs)(uint8_t), uint8_t(*userSpiWrite)(uint8_t, uint8_t, uint8_t*), uint8_t(*userSpiRead)(uint8_t, uint8_t, uint8_t*), uint8_t(*userDRDY)(void), void(*userErrorCallback)(uint8_t), uint16_t userRref, uint16_t userRtdValue, uint8_t userOperationMode, uint16_t highTempFault, uint16_t lowTempFault, uint8_t notchFreq, uint8_t userConversionMode)
+uint8_t MAX31865init(MAX31865* sensorInstance, void(*userDelay)(uint32_t), void(*userCs)(uint8_t), uint8_t(*userSpiWrite)(uint8_t, uint8_t, uint8_t*), uint8_t(*userSpiRead)(uint8_t, uint8_t, uint8_t*), uint8_t(*userDRDY)(void), void(*userErrorCallback)(uint8_t), uint16_t userRref, uint16_t userInputCapacitor, uint16_t userRtdValue, uint8_t userOperationMode, uint16_t highTempFault, uint16_t lowTempFault, uint8_t notchFreq, uint8_t userConversionMode)
 {
 	// passing in the function pointers of the interface functions into the provided MAX31865 instance
 	sensorInstance->delay = userDelay;
@@ -488,7 +480,17 @@ uint8_t MAX31865init(MAX31865* sensorInstance, void(*userDelay)(uint32_t), void(
 
 	// initializing the sensor's parameters
 	sensorInstance->rRef = userRref;
+	sensorInstance->inputCapacitor = userInputCapacitor;
 	sensorInstance->rtdValue = userRtdValue;
+
+	if(rRef * inputCapacitor % 1000 == 0)
+	{
+		sensorInstance->timeConstant = (rRef * inputCapacitor) / 1000;
+	}
+	else
+	{
+		sensorInstance->timeConstant = ((rRef * inputCapacitor) / 1000) + 1;
+	}
 
 	// setting operation mode, 3wire or 2/4 wire
 	if(MAX31865setOperationMode(sensorInstance, userOperationMode) != 1)
