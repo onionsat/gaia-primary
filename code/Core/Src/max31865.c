@@ -419,7 +419,7 @@ uint8_t MAX31865Faultdetection(MAX31865* sensorInstance)
 		// manual fault detection
 		if(sensorInstance->bias == 0) // if vbias is off, switching it on and wait for 5 time constant
 		{
-			MAX31865switchBias(1)
+			MAX31865switchBias(1);
 		}
 	}
 	else
@@ -463,82 +463,93 @@ uint8_t MAX31865Faultdetection(MAX31865* sensorInstance)
 
 /**
   * @brief Initialzies an instance of MAX31865
-  * @param A pointer to an instance of MAX31865
-  * @param Function pointer to user provided delay function
-  * @param Function pointer to user provided chipselect function
-  * @param Function pointer to user provided spi write function
-  * @param Function pointer to user provided spi read function
-  * @param Function pointer to user provided DRDY function
-  * @param Function pointer to user provided error callback function
-  * @param The reference resistor's value in ohms
-  * @param The resistance of the RTD in ohms at 0celsius
-  * @param Operation mode of the RTD. 1 -> 3 wire, 0 -> 2/4 wire
-  * @param High temperature fault, 15bit ADC format
-  * @param Low temperature fault, 15bit ADC format
-  * @param Notch frequency, 1 -> 50Hz, 0 -> 60Hz
-  * @param Conversion mode, 1 -> automatic, 0 -> normally off
-  * @retval 1 -> success, 0 -> failure
+  * @param sensorInstance -> Pointer to a MAX31865 instance which should be initialised
+  * @param delay -> Function pointer to user provided delay function
+  * @param cs -> Function pointer to user provided chipselect function
+  * @param SpiWrite -> Function pointer to user provided spi write function
+  * @param SpiRead -> Function pointer to user provided spi read function
+  * @param DRDY -> Function pointer to user provided DRDY function
+  * @param errorCallback -> Function pointer to user provided error callback function
+  * @param referenceResistor -> The reference resistor's value in ohms
+  * @param inputCapacitor -> The value of the capacitor used in the input RC filter in ohms
+  * @param rtdResistance -> The resistance of the RTD in ohms at 0celsius
+  * @param notchFrequency -> The desired notch frequency, 1 -> 50Hz, 0 -> 60Hz
+  * @param operationMode -> The desired operation mode, 1 -> 3 wire, 0 -> 2/4 wire
+  * @param conversionMode -> The desired conversion mode, 1 -> automatic, 0 -> normally off
+  * @param lowFaultTemperature -> The desired low temperature fault, 15bit ADC format
+  * @param highFaultTemperature -> The desired high temperature fault, 15bit ADC format
+  * @retval For each error case there is a bit in the 8bit return value, the bit is set if the error occurred
+  * 		bit D0 -> error setting operation mode
+  * 		bit D1 -> error setting low temperature fault
+  * 		bit D2 -> error setting hogh temperature fault
+  * 		bit D3 -> error setting notch frequency
+  * 		bit D4 -> error setting conversion mode
+  * 		bit D5 -> error setting bias
   */
-uint8_t MAX31865init(MAX31865* sensorInstance, void(*userDelay)(uint32_t), void(*userCs)(uint8_t), uint8_t(*userSpiWrite)(uint8_t, uint8_t, uint8_t*), uint8_t(*userSpiRead)(uint8_t, uint8_t, uint8_t*), uint8_t(*userDRDY)(void), void(*userErrorCallback)(uint8_t), uint16_t userRref, uint16_t userInputCapacitor, uint16_t userRtdValue, uint8_t userOperationMode, uint16_t highTempFault, uint16_t lowTempFault, uint8_t notchFreq, uint8_t userConversionMode)
+uint8_t MAX31865init(MAX31865* sensorInstance, void(*delay)(uint32_t), void(*cs)(uint8_t), uint8_t(*SpiWrite)(uint8_t, uint8_t, uint8_t*), uint8_t(*SpiRead)(uint8_t, uint8_t, uint8_t*), uint8_t(*DRDY)(void), void(*errorCallback)(uint8_t), uint16_t referenceResistor, uint16_t inputCapacitor, uint16_t rtdResistance, uint8_t notchFrequency, uint8_t operationMode, uint8_t conversionMode, uint16_t lowFaultTemperature, uint16_t highFaultTemperature)
 {
-	// passing in the function pointers of the interface functions into the provided MAX31865 instance
-	sensorInstance->delay = userDelay;
-	sensorInstance->cs = userCs;
-	sensorInstance->SpiWrite = userSpiWrite;
-	sensorInstance->SpiRead = userSpiRead;
-	sensorInstance->DRDY = userDRDY;
-	sensorInstance->errorCallback = userErrorCallback;
+	uint8_t returnValue = 0;
 
-	// initializing the sensor's parameters
-	sensorInstance->rRef = userRref;
-	sensorInstance->inputCapacitor = userInputCapacitor;
-	sensorInstance->rtdValue = userRtdValue;
+	// passing in the function pointers of the interface functions
+	sensorInstance->delay = delay;
+	sensorInstance->cs = cs;
+	sensorInstance->SpiWrite = SpiWrite;
+	sensorInstance->SpiRead = SpiRead;
+	sensorInstance->DRDY = DRDY;
+	sensorInstance->errorCallback = errorCallback;
 
-	if(rRef * inputCapacitor % 1000 == 0)
+
+	// setting the external components' parameters
+	sensorInstance->referenceResistor = referenceResistor;
+	sensorInstance->inputCapacitor = inputCapacitor;
+	sensorInstance->rtdResistance = rtdResistance;
+
+	if(sensorInstance->referenceResistor * sensorInstance->inputCapacitor % 1000 == 0)
 	{
-		sensorInstance->timeConstant = (rRef * inputCapacitor) / 1000;
+		sensorInstance->timeconstant = (sensorInstance->referenceResistor * sensorInstance->inputCapacitor) / 1000;
 	}
 	else
 	{
-		sensorInstance->timeConstant = ((rRef * inputCapacitor) / 1000) + 1;
+		sensorInstance->timeconstant = ((sensorInstance->referenceResistor * sensorInstance->inputCapacitor) / 1000) + 1;
 	}
+
 
 	// setting operation mode, 3wire or 2/4 wire
 	if(MAX31865setOperationMode(sensorInstance, userOperationMode) != 1)
 	{
-		return 0;
+		returnValue |= (1 << 0);
 	}
 
 	// setting high temperature fault and low temperature fault
 	if(MAX31865setTemperatureFault(sensorInstance, 0, lowTempFault) != 1) // low fault
 	{
-		return 0;
+		returnValue |= (1 << 1);
 	}
 
 	if(MAX31865setTemperatureFault(sensorInstance, 1, highTempFault) != 1) // high fault
 	{
-		return 0;
+		returnValue |= (1 << 2);
 	}
 
 	// setting notch frequency
 	if(MAX31865setNotchfrequency(sensorInstance, notchFreq) != 1)
 	{
-		return 0;
+		returnValue |= (1 << 3);
 	}
 
 	// setting conversion mode, automatic or normally off
 	if(MAX31865setConversionMode(sensorInstance, userConversionMode) != 1)
 	{
-		return 0;
+		returnValue |= (1 << 4);
 	}
 
 	// turning on bias
 	if(MAX31865switchBias(sensorInstance, 1) != 1)
 	{
-		return 0;
+		returnValue |= (1 << 5);
 	}
 
-	return 1;
+	return returnValue;
 }
 
 

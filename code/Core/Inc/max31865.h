@@ -20,7 +20,7 @@
 #define LowFaultThresholdLSB 0x6
 #define faultStatus 0x7
 
-// defining error codes
+// defining error codes for fault detection cycle(automatic or manual fault detection cycle)
 #define rtdHighThresholdError 0b10000000
 #define rtdLowThresholdError 0b01000000
 #define refin1Error 0b00100000 // if refin- is bigger than 0.85 * Vbias
@@ -37,15 +37,15 @@ typedef struct
 	uint8_t(*SpiWrite)(uint8_t, uint8_t, uint8_t*); // SPI write
 	uint8_t(*SpiRead)(uint8_t, uint8_t, uint8_t*); // SPI read
 	uint8_t(*DRDY)(void); // gets the state of DRDY
-	void(*errorCallback)(uint8_t); // errorcallback, user implemented
+	void(*errorCallback)(uint8_t); // errorcallback(user implemented)
 
 	// external components' parameters
-	uint16_t rRef; // reference resistor's value in ohms
+	uint16_t referenceResistor; // reference resistor's value in ohms
 	uint16_t inputCapacitor; // input capacitor's value in nanofarads
-	uint16_t rtdValue; // rtd's resistance in ohms at 0celsius
-	uint32_t timeConstant; // the time constant of the input RC in us
+	uint16_t rtdResistance; // rtd's resistance in ohms at 0celsius
+	uint32_t timeconstant; // the time constant of the input RC in us
 
-	//
+	// configuration parameters
 	uint8_t bias; // 1 -> on, 0 -> off
 	uint8_t notchFrequency; // 1 -> 50Hz, 0-> 60Hz
 	uint8_t operationMode; // 1 -> 3 wire, 0 -> 2/4 wire
