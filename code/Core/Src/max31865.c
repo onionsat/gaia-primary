@@ -400,11 +400,11 @@ uint8_t MAX31865readData(MAX31865* sensorInstance, uint16_t* data)
 
 
 /**
-  * @brief Runs an automatic fault detection, at the beginning of the function it saves the current state of the configuration register and after the cycle completes it writes it back
+  * @brief Runs automatic or manual fault detection depending on the time constant of the input filter. At the beginning of the function saves the current state of the configuration register and after the cycle completes it writes it back
   * @param A pointer to an instance of MAX31865
   * @retval 1 -> success, 0 -> couldn't read the initial state of the configuration register, 2 -> couldn't start the automatic fault detection, 3 -> couldn't write back initial configuration register state
   */
-uint8_t MAX31865automaticFaultdetection(MAX31865* sensorInstance)
+uint8_t MAX31865Faultdetection(MAX31865* sensorInstance)
 {
 	// reading the initial state of the configuration register
 	uint8_t configurationRegisterInitial;
@@ -414,36 +414,47 @@ uint8_t MAX31865automaticFaultdetection(MAX31865* sensorInstance)
 		return 0;
 	}
 
-	// starting the automatic fault detection cycle value for the configuration register, 100X010X
-	uint8_t conRegStartAutomaticFaultDet = 0b10000100;
-
-	// setting the two X to the values in the sensorInstance
-	if(sensorInstance->notchFrequency == 1)
+	if(sensorInstance->timeConstant > 100)
 	{
-		conRegStartAutomaticFaultDet |= (1 << 0);
+		// manual fault detection
+		if(sensorInstance->bias == 0) // if vbias is off, switching it on and wait for 5 time constant
+		{
+			MAX31865switchBias(1)
+		}
 	}
-
-	if(sensorInsatnce->operationMode == 1)
+	else
 	{
-		conRegStartAutomaticFaultDet |= (1 << 4);
-	}
+		// starting the automatic fault detection cycle value for the configuration register, 100X010X
+		uint8_t conRegStartAutomaticFaultDet = 0b10000100;
 
-	sensorInstance->cs(0);
-	uint8_t retVal = sensorInstance->SpiWrite(configuration, 1, &conRegStartAutomaticFaultDet);
-	sensorInstance->cs(1);
+		// setting the two X to the values in the sensorInstance
+		if(sensorInstance->notchFrequency == 1)
+		{
+			conRegStartAutomaticFaultDet |= (1 << 0);
+		}
 
-	if(retVal != 1)
-	{
-		return 2;
-	}
+		if(sensorInsatnce->operationMode == 1)
+		{
+			conRegStartAutomaticFaultDet |= (1 << 4);
+		}
 
-	// waiting for the required 600us(plus extra 50us)
-	sensorInstance->delay(650);
+		sensorInstance->cs(0);
+		uint8_t retVal = sensorInstance->SpiWrite(configuration, 1, &conRegStartAutomaticFaultDet);
+		sensorInstance->cs(1);
 
-	// writing back the initial state of the configuration register
-	if(sensorInstance->SpiWrite(configuration, 1, &configurationRegisterBeginning) != 1)
-	{
-		return 3;
+		if(retVal != 1)
+		{
+			return 2;
+		}
+
+		// waiting for the required 600us(plus extra 50us)
+		sensorInstance->delay(650);
+
+		// writing back the initial state of the configuration register
+		if(sensorInstance->SpiWrite(configuration, 1, &configurationRegisterBeginning) != 1)
+		{
+			return 3;
+		}
 	}
 
 	return 1;
