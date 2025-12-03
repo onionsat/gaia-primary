@@ -237,6 +237,7 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
+  /*
   char UARTbuffer[100];
 
   MAX31865 max31865_sensor1;
@@ -264,6 +265,7 @@ int main(void)
 		int snprintfWritten = snprintf(UARTbuffer, 100, "Configuration register after inti: %u", configurationRegisterAfterInit);
 		HAL_UART_Transmit(&huart1, (uint8_t*)UARTbuffer, snprintfWritten, 100);
 	}
+	*/
 
   /* USER CODE END 2 */
 
@@ -271,6 +273,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	  /*
 	  if(0 == 0)
 	  {
 		  if(MAX31865readData(&max31865_sensor1, &max31865_sensor1_databuffer) != 1)
@@ -286,6 +289,8 @@ int main(void)
 	  }
 
 	  HAL_Delay(1000);
+	  */
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

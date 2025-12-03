@@ -55,7 +55,7 @@ typedef struct
 } MAX31865;
 
 
-uint8_t MAX31865init(MAX31865* sensorInstance, void(*userDelay)(uint32_t), void(*userCs)(uint8_t), uint8_t(*userSpiWrite)(uint8_t, uint8_t, uint8_t*), uint8_t(*userSpiRead)(uint8_t, uint8_t, uint8_t*), uint8_t(*userDRDY)(void), void(*userErrorCallback)(uint8_t), uint16_t userRref, uint16_t userInputCapacitor, uint16_t userRtdValue, uint8_t userOperationMode, uint16_t highTempFault, uint16_t lowTempFault, uint8_t notchFreq, uint8_t userConversionMode);
+uint8_t MAX31865init(MAX31865* sensorInstance, void(*delay)(uint32_t), void(*cs)(uint8_t), uint8_t(*SpiWrite)(uint8_t, uint8_t, uint8_t*), uint8_t(*SpiRead)(uint8_t, uint8_t, uint8_t*), uint8_t(*DRDY)(void), void(*errorCallback)(uint8_t), uint16_t referenceResistor, uint16_t inputCapacitor, uint16_t rtdResistance, uint8_t notchFrequency, uint8_t operationMode, uint8_t conversionMode, uint16_t lowFaultTemperature, uint16_t highFaultTemperature);
 uint8_t MAX31865readData(MAX31865* sensorInstance, uint16_t* data);
 
 
