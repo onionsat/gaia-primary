@@ -401,7 +401,7 @@ uint8_t MAX31865readData(MAX31865* sensorInstance, uint16_t* data)
 /**
   * @brief Runs automatic fault detection. At the end it writes back the initial state of the configuration register. After we can read the results using MAX31865readFault function.
   * @param A pointer to an instance of MAX31865
-  * @retval 1 -> success
+  * @retval 1 -> success, 2 -> unable to start automatic fault detection, 3 -> error while checking for completion, 4 -> unable to write back configuration register
   */
 uint8_t MAX31865automaticFault(MAX31865* sensorInstance)
 {
@@ -410,8 +410,56 @@ uint8_t MAX31865automaticFault(MAX31865* sensorInstance)
 
 	if(sensorInstance->SpiWrite((uint8_t)configuration | 0x80, 1, &startAutomaticFaultDetection) != 1)
 	{
-
+		return 2;
 	}
+
+	// check for completion
+	uint8_t finished = 0;
+	uint8_t checkConfiguration;
+
+	while(finished == 0)
+	{
+		if(sensorInstance->SpiRead(configuration, 1, &checkConfiguration) != 1)
+		{
+			return 3;
+		}
+
+		if( (checkConfiguration | 0b00001100) == 0)
+		{
+			finished == 0;
+		}
+		else
+		{
+			sensorInstance->delay(1000); // if it is still running waiting for 1ms until next check
+		}
+	}
+
+	// writing back the initial state of the configuration register
+	uint8_t initialConfigurationRegister = 0;
+
+	if(sensorInstance->bias == 1)
+	{
+		initialConfigurationRegister |= (1 << 7);
+	}
+
+	if(sensorInstance->conversionMode == 1)
+	{
+		initialConfigurationRegister |= (1 << 6);
+	}
+
+	if(sensorInstance->operationMode == 1)
+	{
+		initialConfigurationRegister |= (1 << 4);
+	}
+
+	if(sensorInstance->notchFrequency == 1)
+	{
+		initialConfigurationRegister |= (1 << 0);
+	}
+
+	if()
+
+	return 1;
 }
 
 
