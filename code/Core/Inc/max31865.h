@@ -56,8 +56,22 @@ typedef struct
 } MAX31865;
 
 
-uint8_t MAX31865init(uint8_t sensorId, MAX31865* sensorInstance, void(*delay)(uint32_t), void(*cs)(uint8_t), uint8_t(*SpiWrite)(uint8_t, uint8_t, uint8_t*), uint8_t(*SpiRead)(uint8_t, uint8_t, uint8_t*), uint8_t(*DRDY)(void), void(*errorCallback)(uint8_t, uint8_t), uint16_t referenceResistor, uint16_t inputCapacitor, uint16_t rtdResistance, uint8_t notchFrequency, uint8_t operationMode, uint8_t conversionMode, uint16_t lowFaultTemperature, uint16_t highFaultTemperature);
+// functions
+float MAX31865rawToResistance(MAX31865* sensorInstance, uint16_t adcCode);
+float MAX31865rawToTemperatureApprox(uint16_t adcCode);
+float MAX31865resistanceToTemperature(MAX31865* sensorInstance, float rtdResistance);
+uint8_t MAX31865switchBias(MAX31865* sensorInstance, uint8_t state);
+uint8_t MAX31865setConversionMode(MAX31865* sensorInstance, uint8_t conversionMode);
+uint8_t MAX31865setOperationMode(MAX31865* sensorInstance, uint8_t operationMode);
+uint8_t MAX31865setNotchfrequency(MAX31865* sensorInstance, uint8_t notchFrequency);
+uint8_t MAX31865_1shot(MAX31865* sensorInstance);
+uint8_t MAX31865setTemperatureFault(MAX31865* sensorInstance, uint8_t highOrLow, uint16_t temperature);
+uint8_t MAX31865readFault(MAX31865* sensorInstance);
 uint8_t MAX31865readData(MAX31865* sensorInstance, uint16_t* data);
+uint8_t MAX31865automaticFault(MAX31865* sensorInstance);
+uint8_t MAX31865faultstatusClear(MAX31865* sensorInstance);
+uint8_t MAX31865init(uint8_t sensorId, MAX31865* sensorInstance, void(*delay)(uint32_t), void(*cs)(uint8_t), uint8_t(*SpiWrite)(uint8_t, uint8_t, uint8_t*), uint8_t(*SpiRead)(uint8_t, uint8_t, uint8_t*), uint8_t(*DRDY)(void), void(*errorCallback)(uint8_t, uint8_t), uint16_t referenceResistor, uint16_t inputCapacitor, uint16_t rtdResistance, uint8_t notchFrequency, uint8_t operationMode, uint8_t conversionMode, uint16_t lowFaultTemperature, uint16_t highFaultTemperature);
+
 
 
 #endif /* INC_MAX31865_H_ */
