@@ -66,6 +66,8 @@ static void MX_SPI1_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
+#define UARTmessages 1 // if 1 it will send read datas on UART if 0 it won't
+
 // start of user implemented MAX31865 functions
 
 void MAX31865delay(uint32_t us)
@@ -165,7 +167,7 @@ uint8_t MAX31865spiRead(uint8_t reg, uint8_t numberOfBytes, uint8_t* dataBuffer)
 	return 1;
 }
 
-void MAX31865errorcallback(uint8_t faultstatus)
+void MAX31865errorcallback(uint8_t sensorId, uint8_t faultstatus)
 {
 	if((faultstatus & rtdHighThresholdError) > 0)
 	{
@@ -237,35 +239,20 @@ int main(void)
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
 
-  /*
   char UARTbuffer[100];
+  int snprintfWritten;
 
   MAX31865 max31865_sensor1;
-  uint8_t max31865_sensor1_initRetVal = MAX31865init(&max31865_sensor1, &MAX31865delay, &MAX31865setCS_1, &MAX31865spiWrite, &MAX31865spiRead, &MAX31865drdy_1, &MAX31865errorcallback, 4000, 1000, 0, 0xFFFF, 0x0000, 1, 1);
+  uint8_t max31865_sensor1_initRetVal = MAX31865init(1, &max31865_sensor1, &MAX31865delay, &MAX31865setCS_1, &MAX31865spiWrite, &MAX31865spiRead, &MAX31865drdy_1, &MAX31865errorcallback, 4000, 10, 1000, 1, 0, 1, 0, 0xFFFF);
   uint16_t max31865_sensor1_databuffer;
 
-  // printing init result on UART
-	int snprintfWritten = snprintf(UARTbuffer, 100, "Init result: %u", max31865_sensor1_initRetVal);
-	HAL_UART_Transmit(&huart1, (uint8_t*)UARTbuffer, snprintfWritten, 100);
+  MAX31865 max31865_sensor2;
+  uint8_t max31865_sensor2_initRetVal = MAX31865init(2, &max31865_sensor2, &MAX31865delay, &MAX31865setCS_2, &MAX31865spiWrite, &MAX31865spiRead, &MAX31865drdy_1, &MAX31865errorcallback, 4000, 10, 1000, 1, 0, 1, 0, 0xFFFF);
+  uint16_t max31865_sensor2_databuffer;
 
-  // trying reading and printing configuration register after init
-	uint8_t configurationRegisterAfterInit;
-
-	max31865_sensor1.cs(0);
-	uint8_t confRegAfterInitRetVal = max31865_sensor1.SpiRead(configuration, 1, &configurationRegisterAfterInit);
-	max31865_sensor1.cs(1);
-
-	if(confRegAfterInitRetVal != 1)
-	{
-		int snprintfWritten = snprintf(UARTbuffer, 100, "Error reading configuration register after init\n");
-		HAL_UART_Transmit(&huart1, (uint8_t*)UARTbuffer, snprintfWritten, 100);
-	}
-	else
-	{
-		int snprintfWritten = snprintf(UARTbuffer, 100, "Configuration register after inti: %u", configurationRegisterAfterInit);
-		HAL_UART_Transmit(&huart1, (uint8_t*)UARTbuffer, snprintfWritten, 100);
-	}
-	*/
+  // printing init result of the two RTD on UART
+  snprintfWritten = snprintf(UARTbuffer, 100, "MAX31865 initialisations:\nsensor1: %u\nsensor2: %u\n", max31865_sensor1_initRetVal, max31865_sensor2_initRetVal);
+  HAL_UART_Transmit(&huart1, (uint8_t*)UARTbuffer, snprintfWritten, 100);
 
   /* USER CODE END 2 */
 
@@ -273,23 +260,50 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  /*
-	  if(0 == 0)
+	  // reading the two MAX31865 sensor
+	  if(max31865_sensor1.DRDY() == 0)
 	  {
 		  if(MAX31865readData(&max31865_sensor1, &max31865_sensor1_databuffer) != 1)
 		  {
-			  int snprinftWritten = snprintf(UARTbuffer, 100, "Error reading temperature data from MAX31865 sensor1\n");
-		  	  HAL_UART_Transmit(&huart1, (uint8_t*)UARTbuffer, snprinftWritten, 100);
+			  // error reading from MAX31865 id1
+			  if(UARTmessages == 1)
+			  {
+				  snprintfWritten = snprintf(UARTbuffer, 100, "Error reading from MAX31865_1\n");
+				  HAL_UART_Transmit(&huart1, (uint8_t*)UARTbuffer, snprintfWritten, 100);
+			  }
 		  }
 		  else
 		  {
-			  int snprinftWritten = snprintf(UARTbuffer, 100, "Data read from MAX31865 sensor 1: %u\n", max31865_sensor1_databuffer);
-			  HAL_UART_Transmit(&huart1, (uint8_t*)UARTbuffer, snprinftWritten, 100);
+			  // printing out the results
+			  if(UARTmessages == 1)
+			  {
+				  snprintfWritten = snprintf(UARTbuffer, 100, "Data read from MAX31865_1: %u\n", max31865_sensor1_databuffer);
+				  HAL_UART_Transmit(&huart1, (uint8_t*)UARTbuffer, snprintfWritten, 100);
+			  }
 		  }
 	  }
 
-	  HAL_Delay(1000);
-	  */
+	  if(max31865_sensor2.DRDY() == 0)
+	  {
+		  if(MAX31865readData(&max31865_sensor2, &max31865_sensor2_databuffer) != 1)
+		  {
+			  // error reading from MAX31865 id2
+			  if(UARTmessages == 1)
+			  {
+				  snprintfWritten = snprintf(UARTbuffer, 100, "Error reading from MAX31865_2\n");
+				  HAL_UART_Transmit(&huart1, (uint8_t*)UARTbuffer, snprintfWritten, 100);
+			  }
+		  }
+		  else
+		  {
+			  // printing out the results
+			  if(UARTmessages == 1)
+			  {
+				  snprintfWritten = snprintf(UARTbuffer, 100, "Data read from MAX31865_2: %u\n", max31865_sensor2_databuffer);
+				  HAL_UART_Transmit(&huart1, (uint8_t*)UARTbuffer, snprintfWritten, 100);
+			  }
+		  }
+	  }
 
     /* USER CODE END WHILE */
 

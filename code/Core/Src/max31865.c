@@ -5,8 +5,8 @@
  *      Author: Robert Mihalyffy
  */
 #include <math.h>
+#include <stdint.h>
 #include "max31865.h"
-#include <stdio.h>
 
 
 /**
@@ -21,6 +21,20 @@ float MAX31865rawToResistance(MAX31865* sensorInstance, uint16_t adcCode)
 
 	return resistance;
 }
+
+
+/**
+  * @brief Converts raw ADC data into kelvins
+  * @param 15bit ADC code
+  * @retval The temperature in kelvins
+  */
+float MAX31865rawToTemperatureApprox(uint16_t adcCode)
+{
+	float temperature = ((float)adcCode / 32) + 17;
+
+	return temperature;
+}
+
 
 /**
   * @brief Converts resistance into kelvins using the Callendar-Van Dusen equation
@@ -72,7 +86,7 @@ uint8_t MAX31865switchBias(MAX31865* sensorInstance, uint8_t state)
 
 	// writing the desired status to the register
 	sensorInstance->cs(0);
-	retVal = sensorInstance->SpiWrite((uint8_t)configuration | 0x80, 1, &configurationRegisterDesired);
+	retVal = sensorInstance->SpiWrite(configuration | 0x80, 1, &configurationRegisterDesired);
 	sensorInstance->cs(1);
 
 	if(retVal != 1)
@@ -120,7 +134,7 @@ uint8_t MAX31865setConversionMode(MAX31865* sensorInstance, uint8_t conversionMo
 
 	// writing the desired status to the register
 	sensorInstance->cs(0);
-	retVal = sensorInstance->SpiWrite((uint8_t)configuration | 0x80, 1, &configurationRegisterDesired);
+	retVal = sensorInstance->SpiWrite(configuration | 0x80, 1, &configurationRegisterDesired);
 	sensorInstance->cs(1);
 
 	if(retVal != 1)
@@ -168,7 +182,7 @@ uint8_t MAX31865setOperationMode(MAX31865* sensorInstance, uint8_t operationMode
 
 	// writing the desired status to the register
 	sensorInstance->cs(0);
-	retVal = sensorInstance->SpiWrite((uint8_t)configuration | 0x80, 1, &configurationRegisterDesired);
+	retVal = sensorInstance->SpiWrite(configuration | 0x80, 1, &configurationRegisterDesired);
 	sensorInstance->cs(1);
 
 	if(retVal != 1)
@@ -216,7 +230,7 @@ uint8_t MAX31865setNotchfrequency(MAX31865* sensorInstance, uint8_t notchFrequen
 
 	// writing the desired status to the register
 	sensorInstance->cs(0);
-	retVal = sensorInstance->SpiWrite((uint8_t)configuration | 0x80, 1, &configurationRegisterDesired);
+	retVal = sensorInstance->SpiWrite(configuration | 0x80, 1, &configurationRegisterDesired);
 	sensorInstance->cs(1);
 
 	if(retVal != 1)
@@ -269,7 +283,7 @@ uint8_t MAX31865_1shot(MAX31865* sensorInstance)
 
 	// writing the desired status to the register
 	sensorInstance->cs(0);
-	retVal = sensorInstance->SpiWrite((uint8_t)configuration | 0x80, 1, &configurationRegisterDesired);
+	retVal = sensorInstance->SpiWrite(configuration | 0x80, 1, &configurationRegisterDesired);
 	sensorInstance->cs(1);
 
 	if(retVal != 1)
@@ -310,7 +324,7 @@ uint8_t MAX31865setTemperatureFault(MAX31865* sensorInstance, uint8_t highOrLow,
 	if(highOrLow == 1) // high fault
 	{
 		sensorInstance->cs(0);
-		uint8_t retVal = sensorInstance->SpiWrite((uint8_t)HighFaultThresholdMSB | 0x80, 2, dataToSend);
+		uint8_t retVal = sensorInstance->SpiWrite(HighFaultThresholdMSB | 0x80, 2, dataToSend);
 		sensorInstance->cs(1);
 
 		if(retVal != 1)
@@ -325,7 +339,7 @@ uint8_t MAX31865setTemperatureFault(MAX31865* sensorInstance, uint8_t highOrLow,
 	else
 	{
 		sensorInstance->cs(0);
-		uint8_t retVal = sensorInstance->SpiWrite((uint8_t)LowFaultThresholdMSB | 0x80, 2, dataToSend);
+		uint8_t retVal = sensorInstance->SpiWrite(LowFaultThresholdMSB | 0x80, 2, dataToSend);
 		sensorInstance->cs(1);
 
 		if(retVal != 1)
@@ -355,7 +369,7 @@ uint8_t MAX31865readFault(MAX31865* sensorInstance)
 		return 2;
 	}
 
-	sensorInstance->errorCallback(faultStatusRegister);
+	sensorInstance->errorCallback(sensorInstance->sensorId, faultStatusRegister);
 
 	return 1;
 }
@@ -400,15 +414,17 @@ uint8_t MAX31865readData(MAX31865* sensorInstance, uint16_t* data)
 
 /**
   * @brief Runs automatic fault detection. At the end it writes back the initial state of the configuration register. After we can read the results using MAX31865readFault function.
+  * @note Regardless of the initial state of the fault status clear bit and the 1-shot bit both will be written back as 0
+  * @note Use this fault detection function if the timeconstant of the sensorInstance is smaller than or equal to 100us
   * @param A pointer to an instance of MAX31865
   * @retval 1 -> success, 2 -> unable to start automatic fault detection, 3 -> error while checking for completion, 4 -> unable to write back configuration register
   */
 uint8_t MAX31865automaticFault(MAX31865* sensorInstance)
 {
-	// starting the automatic fault detection cycle(configuration register value: 100X010X)
+	// starting the automatic fault detection(configuration register value: 100X010X)
 	uint8_t startAutomaticFaultDetection = 0b10000100;
 
-	if(sensorInstance->SpiWrite((uint8_t)configuration | 0x80, 1, &startAutomaticFaultDetection) != 1)
+	if(sensorInstance->SpiWrite(configuration | 0x80, 1, &startAutomaticFaultDetection) != 1)
 	{
 		return 2;
 	}
@@ -426,7 +442,7 @@ uint8_t MAX31865automaticFault(MAX31865* sensorInstance)
 
 		if( (checkConfiguration | 0b00001100) == 0)
 		{
-			finished == 0;
+			finished = 0;
 		}
 		else
 		{
@@ -457,32 +473,60 @@ uint8_t MAX31865automaticFault(MAX31865* sensorInstance)
 		initialConfigurationRegister |= (1 << 0);
 	}
 
-	if()
+	if(sensorInstance->SpiWrite(configuration | 0x80, 1, &initialConfigurationRegister) != 1)
+	{
+		return 4;
+	}
 
 	return 1;
 }
 
 
 /**
-  * @brief Runs automatic or manual fault detection depending on the time constant of the input filter. It saves the state of the configuration register and at the end it writes it back. After we can read the results using MAX31865readFault function.
+  * @brief Clears the fault status register
+  * @note It sets the 1-shot and the fault detection cycle control bits to 0
   * @param A pointer to an instance of MAX31865
-  * @retval 1 -> success
+  * @retval 1 -> success, 2 -> failure
   */
-uint8_t MAX31865Faultdetection(MAX31865* sensorInstance)
+uint8_t MAX31865faultstatusClear(MAX31865* sensorInstance)
 {
-	if(sensorInstance->timeconstant > 100)
+	uint8_t faultstatusclear = 0;
+
+	if(sensorInstance->bias == 1)
 	{
-		// manual fault detection
+		faultstatusclear |= (1 << 7);
 	}
-	else
+
+	if(sensorInstance->conversionMode == 1)
 	{
-		// automatic fault detection
+		faultstatusclear |= (1 << 6);
 	}
+
+	if(sensorInstance->operationMode == 1)
+	{
+		faultstatusclear |= (1 << 4);
+	}
+
+	if(sensorInstance->notchFrequency == 1)
+	{
+		faultstatusclear |= (1 << 0);
+	}
+
+	faultstatusclear |= (1 << 1);
+
+	if(sensorInstance->SpiWrite(configuration | 0x80, 1, &faultstatusclear) != 1)
+	{
+		return 2;
+	}
+
+	return 1;
 }
 
 
+
 /**
-  * @brief Initialzies an instance of MAX31865
+  * @brief Initialises an instance of MAX31865
+  * @param The ID of the the instance to be initialised(it can be anything from 0 to 255)
   * @param sensorInstance -> Pointer to a MAX31865 instance which should be initialised
   * @param delay -> Function pointer to user provided delay function
   * @param cs -> Function pointer to user provided chipselect function
@@ -506,9 +550,12 @@ uint8_t MAX31865Faultdetection(MAX31865* sensorInstance)
   * 		bit D4 -> error setting conversion mode
   * 		bit D5 -> error setting bias
   */
-uint8_t MAX31865init(MAX31865* sensorInstance, void(*delay)(uint32_t), void(*cs)(uint8_t), uint8_t(*SpiWrite)(uint8_t, uint8_t, uint8_t*), uint8_t(*SpiRead)(uint8_t, uint8_t, uint8_t*), uint8_t(*DRDY)(void), void(*errorCallback)(uint8_t), uint16_t referenceResistor, uint16_t inputCapacitor, uint16_t rtdResistance, uint8_t notchFrequency, uint8_t operationMode, uint8_t conversionMode, uint16_t lowFaultTemperature, uint16_t highFaultTemperature)
+uint8_t MAX31865init(uint8_t sensorId, MAX31865* sensorInstance, void(*delay)(uint32_t), void(*cs)(uint8_t), uint8_t(*SpiWrite)(uint8_t, uint8_t, uint8_t*), uint8_t(*SpiRead)(uint8_t, uint8_t, uint8_t*), uint8_t(*DRDY)(void), void(*errorCallback)(uint8_t, uint8_t), uint16_t referenceResistor, uint16_t inputCapacitor, uint16_t rtdResistance, uint8_t notchFrequency, uint8_t operationMode, uint8_t conversionMode, uint16_t lowFaultTemperature, uint16_t highFaultTemperature)
 {
 	uint8_t returnValue = 0;
+
+	// passing in sensor id
+	sensorInstance->sensorId = sensorId;
 
 	// passing in the function pointers of the interface functions
 	sensorInstance->delay = delay;

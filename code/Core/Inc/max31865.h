@@ -8,36 +8,37 @@
 #ifndef INC_MAX31865_H_
 #define INC_MAX31865_H_
 
-#include <stdint.h>
-
 // defining registers
-#define configuration 0x0
-#define rtdMSBs 0x1
-#define rtdLSBs 0x2
-#define HighFaultThresholdMSB 0x3
-#define HighFaultThresholdLSB 0x4
-#define LowFaultThresholdMSB 0x5
-#define LowFaultThresholdLSB 0x6
-#define faultStatus 0x7
+#define configuration 0x0U
+#define rtdMSBs 0x1U
+#define rtdLSBs 0x2U
+#define HighFaultThresholdMSB 0x3U
+#define HighFaultThresholdLSB 0x4U
+#define LowFaultThresholdMSB 0x5U
+#define LowFaultThresholdLSB 0x6U
+#define faultStatus 0x7U
 
 // defining error codes for fault detection cycle(automatic or manual fault detection cycle)
-#define rtdHighThresholdError 0b10000000
-#define rtdLowThresholdError 0b01000000
-#define refin1Error 0b00100000 // if refin- is bigger than 0.85 * Vbias
-#define refin2Error 0b00010000 // if refin- is smaller than 0.85 * Vbias with force- open
-#define rtdinError 0b00001000 // if rtdin- is smaller than 0.85 * Vbias with force- open
-#define overOrUnderVoltageError 0b00000100
+#define rtdHighThresholdError 0b10000000U
+#define rtdLowThresholdError 0b01000000u
+#define refin1Error 0b00100000U // if refin- is bigger than 0.85 * Vbias
+#define refin2Error 0b00010000U // if refin- is smaller than 0.85 * Vbias with force- open
+#define rtdinError 0b00001000U // if rtdin- is smaller than 0.85 * Vbias with force- open
+#define overOrUnderVoltageError 0b00000100U
 
 
 typedef struct
 {
+	// number of the instance
+	uint8_t sensorId;
+
 	// interface function pointers
 	void(*delay)(uint32_t); // milliseconds delay
 	void(*cs)(uint8_t); // sets the CS pin's state
 	uint8_t(*SpiWrite)(uint8_t, uint8_t, uint8_t*); // SPI write
 	uint8_t(*SpiRead)(uint8_t, uint8_t, uint8_t*); // SPI read
 	uint8_t(*DRDY)(void); // gets the state of DRDY
-	void(*errorCallback)(uint8_t); // errorcallback(user implemented)
+	void(*errorCallback)(uint8_t, uint8_t); // errorcallback(user implemented)
 
 	// external components' parameters
 	uint16_t referenceResistor; // reference resistor's value in ohms
@@ -55,7 +56,7 @@ typedef struct
 } MAX31865;
 
 
-uint8_t MAX31865init(MAX31865* sensorInstance, void(*delay)(uint32_t), void(*cs)(uint8_t), uint8_t(*SpiWrite)(uint8_t, uint8_t, uint8_t*), uint8_t(*SpiRead)(uint8_t, uint8_t, uint8_t*), uint8_t(*DRDY)(void), void(*errorCallback)(uint8_t), uint16_t referenceResistor, uint16_t inputCapacitor, uint16_t rtdResistance, uint8_t notchFrequency, uint8_t operationMode, uint8_t conversionMode, uint16_t lowFaultTemperature, uint16_t highFaultTemperature);
+uint8_t MAX31865init(uint8_t sensorId, MAX31865* sensorInstance, void(*delay)(uint32_t), void(*cs)(uint8_t), uint8_t(*SpiWrite)(uint8_t, uint8_t, uint8_t*), uint8_t(*SpiRead)(uint8_t, uint8_t, uint8_t*), uint8_t(*DRDY)(void), void(*errorCallback)(uint8_t, uint8_t), uint16_t referenceResistor, uint16_t inputCapacitor, uint16_t rtdResistance, uint8_t notchFrequency, uint8_t operationMode, uint8_t conversionMode, uint16_t lowFaultTemperature, uint16_t highFaultTemperature);
 uint8_t MAX31865readData(MAX31865* sensorInstance, uint16_t* data);
 
 
