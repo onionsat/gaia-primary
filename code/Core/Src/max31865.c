@@ -49,7 +49,7 @@ float MAX31865resistanceToTemperature(MAX31865* sensorInstance, float rtdResista
 
 	float temperature = (-a + sqrt(pow(a, 2) - 4*b*(1 - rtdResistance / sensorInstance->referenceResistor))) / (2 * b);
 
-	return temperature;
+	return temperature + 273.15;
 }
 
 
@@ -440,7 +440,7 @@ uint8_t MAX31865automaticFault(MAX31865* sensorInstance)
 			return 3;
 		}
 
-		if( (checkConfiguration | 0b00001100) == 0)
+		if( (checkConfiguration & 0b00001100) == 0)
 		{
 			finished = 0;
 		}

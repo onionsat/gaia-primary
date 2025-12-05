@@ -9,6 +9,6 @@
 ../Core/Src/max31865.c:315:9:MAX31865setTemperatureFault	4
 ../Core/Src/max31865.c:363:9:MAX31865readFault	2
 ../Core/Src/max31865.c:384:9:MAX31865readData	4
-../Core/Src/max31865.c:422:9:MAX31865automaticFault	9
+../Core/Src/max31865.c:422:9:MAX31865automaticFault	10
 ../Core/Src/max31865.c:491:9:MAX31865faultstatusClear	6
 ../Core/Src/max31865.c:553:9:MAX31865init	8

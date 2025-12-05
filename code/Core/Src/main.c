@@ -131,10 +131,8 @@ uint8_t MAX31865spiWrite(uint8_t reg, uint8_t numberOfBytes, uint8_t* dataBuffer
 		return 0; // if error return 0
 	}
 
-	uint8_t reciveBuffer[numberOfBytes];
-
 	// sending actual data
-	if(HAL_SPI_TransmitReceive(&hspi1, dataBuffer, reciveBuffer, numberOfBytes, 100) != HAL_OK)
+	if(HAL_SPI_Transmit(&hspi1, dataBuffer, numberOfBytes, 100) != HAL_OK)
 	{
 		return 0;
 	}
@@ -144,14 +142,6 @@ uint8_t MAX31865spiWrite(uint8_t reg, uint8_t numberOfBytes, uint8_t* dataBuffer
 
 uint8_t MAX31865spiRead(uint8_t reg, uint8_t numberOfBytes, uint8_t* dataBuffer)
 {
-	// creating an array with dummy bytes
-	uint8_t dummys[numberOfBytes];
-
-	for(int i = 0; i < numberOfBytes; i++)
-	{
-		dummys[i] = 0xFF;
-	}
-
 	// sending address byte
 	if(HAL_SPI_Transmit(&hspi1, &reg, 1, 100) != HAL_OK)
 	{
@@ -159,7 +149,7 @@ uint8_t MAX31865spiRead(uint8_t reg, uint8_t numberOfBytes, uint8_t* dataBuffer)
 	}
 
 	// receiving actual data
-	if(HAL_SPI_TransmitReceive(&hspi1, dummys, dataBuffer, numberOfBytes, 100) != HAL_OK)
+	if(HAL_SPI_Receive(&hspi1, dataBuffer, numberOfBytes, 100) != HAL_OK)
 	{
 		return 0;
 	}
@@ -247,7 +237,7 @@ int main(void)
   uint16_t max31865_sensor1_databuffer;
 
   MAX31865 max31865_sensor2;
-  uint8_t max31865_sensor2_initRetVal = MAX31865init(2, &max31865_sensor2, &MAX31865delay, &MAX31865setCS_2, &MAX31865spiWrite, &MAX31865spiRead, &MAX31865drdy_1, &MAX31865errorcallback, 4000, 10, 1000, 1, 0, 1, 0, 0xFFFF);
+  uint8_t max31865_sensor2_initRetVal = MAX31865init(2, &max31865_sensor2, &MAX31865delay, &MAX31865setCS_2, &MAX31865spiWrite, &MAX31865spiRead, &MAX31865drdy_2, &MAX31865errorcallback, 4000, 10, 1000, 1, 0, 1, 0, 0xFFFF);
   uint16_t max31865_sensor2_databuffer;
 
   // printing init result of the two RTD on UART
@@ -304,6 +294,8 @@ int main(void)
 			  }
 		  }
 	  }
+
+	  HAL_Delay(1000);
 
     /* USER CODE END WHILE */
 
