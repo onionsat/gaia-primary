@@ -19,8 +19,8 @@
 #define faultStatus 0x7U
 
 // defining error codes for fault detection cycle(automatic or manual fault detection cycle)
-#define rtdHighThresholdError 0b10000000U
-#define rtdLowThresholdError 0b01000000u
+#define rtdHighThresholdError 0b10000000U // if the 15 bit temperature read is bigger then or equals to the high temperature fault
+#define rtdLowThresholdError 0b01000000u // if the 15 bit temperature read is smaller then or equals to the low temperature fault
 #define refin1Error 0b00100000U // if refin- is bigger than 0.85 * Vbias
 #define refin2Error 0b00010000U // if refin- is smaller than 0.85 * Vbias with force- open
 #define rtdinError 0b00001000U // if rtdin- is smaller than 0.85 * Vbias with force- open
